@@ -56,14 +56,35 @@ class LLVMIREmitter:
 
         self._line("")
 
-        # Emit string constants (collected during struct emission)
-        # Will be emitted inline as we generate methods
-
         # Emit all struct methods
         for struct in program.structs:
             self._emit_struct_methods(struct)
 
-        return "\n".join(self.lines)
+        # Post-process: hoist global constant definitions out of function bodies.
+        # Constants like @.str_... must be at the top level in LLVM IR, not inside
+        # a 'define' block.
+        global_consts = []
+        clean_lines = []
+        for line in self.lines:
+            stripped = line.strip()
+            if stripped.startswith('@') and '= private unnamed_addr constant' in stripped:
+                if stripped not in global_consts:
+                    global_consts.append(stripped)
+                # drop the indented inline version
+            else:
+                clean_lines.append(line)
+
+        # Insert hoisted globals before the first 'define'
+        first_define = next(
+            (i for i, l in enumerate(clean_lines) if l.startswith('define ')),
+            len(clean_lines)
+        )
+        for i, g in enumerate(global_consts):
+            clean_lines.insert(first_define + i, g)
+        if global_consts:
+            clean_lines.insert(first_define + len(global_consts), "")
+
+        return "\n".join(clean_lines)
 
     # ─────────────────────────────────────────────
     # HEADER
@@ -270,8 +291,8 @@ class LLVMIREmitter:
                 self._line(f"  %name_val = load i8*, i8** %name_ptr")
                 self._line(f"  %age_ptr  = getelementptr inbounds %{struct.name}, %{struct.name}* %self, i32 0, i32 {aidx}")
                 self._line(f"  %age_val  = load i32, i32* %age_ptr")
-                self._line(f'  {fmt_name} = private unnamed_addr constant [{len(greeting_str)-4+1} x i8] c"{greeting_str}"')
-                self._line(f'  %fmt_ptr = getelementptr [{len(greeting_str)-4+1} x i8], [{len(greeting_str)-4+1} x i8]* {fmt_name}, i32 0, i32 0')
+                self._line(f'  {fmt_name} = private unnamed_addr constant [{len(greeting_str)-4} x i8] c"{greeting_str}"')
+                self._line(f'  %fmt_ptr = getelementptr [{len(greeting_str)-4} x i8], [{len(greeting_str)-4} x i8]* {fmt_name}, i32 0, i32 0')
                 self._line(f"  call i32 (i8*, ...) @printf(i8* %fmt_ptr, i8* %name_val, i32 %age_val)")
             elif name_field:
                 nidx = field_indices.get(name_field.name, 0)

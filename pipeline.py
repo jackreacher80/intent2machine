@@ -13,21 +13,18 @@ Orchestrates all stages of the Intent2Machine pipeline:
 
 import os
 import time
-import sys
-from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
 
-sys.path.insert(0, str(Path(__file__).parent))
-from config import config
+from .config import config
 
-from core.isr import ISRProgram
-from core.semantic import SemanticParser
-from compiler.memory import MemoryLayoutOptimizer
-from compiler.ir_emitter import LLVMIREmitter
-from compiler.backend import LLVMBackend, CompileResult
-from optimizer.oracle import OptimizationOracle
-from verifier.safety import SafetyVerifier, SafetyReport
+from .core.isr import ISRProgram
+from .core.semantic import SemanticParser
+from .compiler.memory import MemoryLayoutOptimizer
+from .compiler.ir_emitter import LLVMIREmitter
+from .compiler.backend import LLVMBackend, CompileResult
+from .optimizer.oracle import OptimizationOracle
+from .verifier.safety import SafetyVerifier, SafetyReport
 
 
 @dataclass

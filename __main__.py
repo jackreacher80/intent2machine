@@ -60,7 +60,7 @@ def main():
 
     # Check API key via config (handles .env file too)
     if args.command in ("compile", "ir", "isr", "shell"):
-        from config import config
+        from .config import config
         try:
             config.validate()
         except EnvironmentError as e:
@@ -68,21 +68,21 @@ def main():
             sys.exit(1)
 
     if args.command == "status":
-        from compiler.backend import LLVMBackend
+        from .compiler.backend import LLVMBackend
         backend = LLVMBackend()
         print(backend.toolchain_status())
 
     elif args.command == "isr":
-        from core.semantic import SemanticParser
+        from .core.semantic import SemanticParser
         parser_obj = SemanticParser()
         isr = parser_obj.parse(args.intent, verbose=True)
         print("\n--- ISR JSON ---")
         print(isr.to_json())
 
     elif args.command == "ir":
-        from core.semantic import SemanticParser
-        from compiler.ir_emitter import LLVMIREmitter
-        from optimizer.oracle import OptimizationOracle
+        from .core.semantic import SemanticParser
+        from .compiler.ir_emitter import LLVMIREmitter
+        from .optimizer.oracle import OptimizationOracle
 
         print(f"Generating IR for: {args.intent}")
         sem = SemanticParser()
@@ -104,7 +104,7 @@ def main():
         print(f"  clang -O3 {output} -o ./output")
 
     elif args.command == "compile":
-        from pipeline import Intent2MachinePipeline
+        from .pipeline import Intent2MachinePipeline
         pipeline = Intent2MachinePipeline(
             skip_ai_optimization=args.no_ai_opt,
             skip_safety_check=args.no_safety,
@@ -119,7 +119,7 @@ def main():
         sys.exit(0 if result.success else 1)
 
     elif args.command == "shell":
-        from pipeline import Intent2MachinePipeline
+        from .pipeline import Intent2MachinePipeline
         pipeline = Intent2MachinePipeline()
         pipeline.interactive()
 

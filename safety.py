@@ -120,11 +120,6 @@ class SafetyVerifier:
             if malloc_match:
                 malloc_ptrs.add(malloc_match.group(1))
 
-            # ── Check 4: Track free ─────────────────────
-            free_match = re.search(r'call void @free\(i8\* (%\w+)\)', s)
-            if free_match:
-                freed_ptrs.add(free_match.group(1))
-
             # ── Check 5: Double free ─────────────────────
             checks += 1
             if 'call void @free' in s:
@@ -139,6 +134,11 @@ class SafetyVerifier:
                             message=f"Double free of pointer {ptr}",
                             suggestion="Track ownership and free each pointer exactly once"
                         ))
+
+            # ── Check 4: Track free ─────────────────────
+            free_match = re.search(r'call void @free\(i8\* (%\w+)\)', s)
+            if free_match:
+                freed_ptrs.add(free_match.group(1))
 
             # ── Check 6: Stack overflow risk ─────────────
             checks += 1
